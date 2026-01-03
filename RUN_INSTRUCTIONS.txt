@@ -1,0 +1,59 @@
+HOW TO RUN THE PROJECT LOCALLY
+================================
+
+1. Install Dependencies
+   ---------------------
+   Run the following command in the project root directory:
+   
+   npm install
+
+
+2. Set Up Environment Variables
+   -----------------------------
+   Copy the .env.example file to .env:
+   
+   Windows: copy .env.example .env
+   Mac/Linux: cp .env.example .env
+   
+   Then edit the .env file and add your webhook URL:
+   
+   VITE_WEBHOOK_URL=https://your-webhook-url-here
+   
+   IMPORTANT: Make sure there are NO spaces around the = sign
+   Example: VITE_WEBHOOK_URL=https://example.com/webhook
+   (NOT: VITE_WEBHOOK_URL = https://example.com/webhook)
+
+
+3. Start the Development Server
+   -----------------------------
+   Run the following command:
+   
+   npm run dev
+   
+   The application will start and you should see a message like:
+   "Local: http://localhost:5173"
+   
+   Open this URL in your web browser.
+   
+   ⚠️  IMPORTANT: If you create or modify the .env file AFTER starting
+   the dev server, you MUST restart it:
+   1. Stop the server (press Ctrl+C in the terminal)
+   2. Run 'npm run dev' again
+   
+   Vite only reads .env files when the server starts!
+
+
+4. Build for Production (Optional)
+   ---------------------------------
+   To create a production build:
+   
+   npm run build
+   
+   The built files will be in the 'dist' folder.
+
+
+NOTES:
+- Make sure you have Node.js installed (version 18 or higher recommended)
+- The .env file contains sensitive information and should NOT be committed to git
+- If you change the .env file, you may need to restart the dev server
+
