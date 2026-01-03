@@ -6,6 +6,8 @@ import {
   toggleRecording as toggleRecordingHelper,
   handleAudioFileSelect as handleAudioFileSelectHelper,
   removeAudio as removeAudioHelper,
+  formatMessages,
+  formatTimestamp,
 } from "@/utils/helper";
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +25,7 @@ const Dashboard = () => {
   const [input, setInput] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -45,6 +48,56 @@ const Dashboard = () => {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  useEffect(() => {
+    const fetchMemory = async () => {
+      if (!isWebhookConfigured) {
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await axios.post(
+          `${apiUrl}/memory/query`,
+          {
+            user_id: userId || "123",
+            session_id: sessionId || "abc",
+            limit: 50,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        // Parse response - it's an array of message objects
+        const responseData = response.data;
+        let messagesArray = [];
+
+        // Handle different response formats
+        if (Array.isArray(responseData)) {
+          messagesArray = responseData;
+        } else if (responseData?.items && Array.isArray(responseData.items)) {
+          messagesArray = responseData.items;
+        } else if (responseData?.data && Array.isArray(responseData.data)) {
+          messagesArray = responseData.data;
+        }
+
+        // Format messages for display
+        // Response structure: [{ id, user_id, session_id, role, content, meta_data, created_at }, ...]
+        if (messagesArray.length > 0) {
+          const formattedMessages = formatMessages(messagesArray);
+          setMessages(formattedMessages);
+        }
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMemory();
+  }, [apiUrl, isWebhookConfigured, userId, sessionId]);
 
   // Toggle recording audio (click to start, click again to stop)
   const toggleRecording = () => {
@@ -93,10 +146,10 @@ const Dashboard = () => {
     e.preventDefault();
     if (
       (input.trim() || audioBlob || selectedAudioFile) &&
-      !loading &&
+      !submitting &&
       isWebhookConfigured
     ) {
-      setLoading(true);
+      setSubmitting(true);
       setError(null);
 
       try {
@@ -136,10 +189,7 @@ const Dashboard = () => {
             id: Date.now(),
             text: input.trim() || "[Audio message]",
             isRight: true,
-            timestamp: new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
+            timestamp: formatTimestamp(new Date().toISOString()),
           };
           setMessages((prev) => [...prev, userMessage]);
         }
@@ -176,10 +226,7 @@ const Dashboard = () => {
             id: Date.now() + 1,
             text: aiResponseText,
             isRight: false,
-            timestamp: new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
+            timestamp: formatTimestamp(new Date().toISOString()),
           };
           setMessages((prev) => [...prev, aiMessage]);
         }
@@ -196,7 +243,7 @@ const Dashboard = () => {
         setError(errorMessage);
         console.error("Error submitting form:", err);
       } finally {
-        setLoading(false);
+        setSubmitting(false);
       }
     }
   };
@@ -251,7 +298,7 @@ const Dashboard = () => {
                 </div>
               )}
               <div className="w-1/2">
-                {loading && (
+                {submitting && (
                   <div className="flex items-center gap-2 mb-4">
                     <div className="h-4 w-4 bg-gray-800 rounded-full animate-pulse"></div>
                     <h4 className="text-sm font-medium animate-pulse">

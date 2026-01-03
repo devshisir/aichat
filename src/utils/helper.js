@@ -6,6 +6,77 @@ export const formatTime = (seconds) => {
     .padStart(2, "0")}`;
 };
 
+// Format timestamp consistently for display
+export const formatTimestamp = (dateString) => {
+  if (!dateString) {
+    return new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  // Parse the date string - handle ISO format with or without timezone
+  let date;
+
+  // If the date string doesn't have a timezone indicator (Z or +/-),
+  // assume it's UTC and append 'Z'
+  if (
+    typeof dateString === "string" &&
+    !dateString.includes("Z") &&
+    !dateString.match(/[+-]\d{2}:\d{2}$/)
+  ) {
+    // Remove microseconds if present and append Z for UTC
+    const normalizedDateString = dateString.replace(/\.\d+$/, "") + "Z";
+    date = new Date(normalizedDateString);
+  } else {
+    date = new Date(dateString);
+  }
+
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    return new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  // Format to local time consistently
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+// Sort messages by created_at (oldest first, newest last)
+export const sortMessagesByCreatedAt = (messages) => {
+  return [...messages].sort((a, b) => {
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return dateA - dateB;
+  });
+};
+
+// Format messages for display
+// Response structure: [{ id, user_id, session_id, role, content, meta_data, created_at }, ...]
+export const formatMessages = (messagesArray) => {
+  if (!messagesArray || messagesArray.length === 0) {
+    return [];
+  }
+
+  // Sort messages by created_at (oldest first, newest last)
+  const sortedMessages = sortMessagesByCreatedAt(messagesArray);
+
+  // Format messages for chat display
+  const formattedMessages = sortedMessages.map((msg) => ({
+    id: msg.id || Date.now() + Math.random(),
+    text: msg.content || msg.text || msg.message || "",
+    isRight: msg.role === "user",
+    timestamp: formatTimestamp(msg.created_at),
+  }));
+
+  return formattedMessages;
+};
+
 // Convert audio blob to WAV format
 const convertToWav = async (audioBlob) => {
   try {
